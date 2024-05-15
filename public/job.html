@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download WT</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 1200px;
+        }
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .card-header {
+            background-color: #007bff;
+            border-radius: 15px 15px 0 0;
+            color: #fff;
+        }
+        .form-control {
+            border-radius: 10px;
+            box-shadow: none;
+        }
+        #submitBtn {
+            border-radius: 10px;
+        }
+        #loadingSpinner {
+            display: none;
+        }
+        #warning {
+            display: none;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title m-0">Trigger Toko</h4>
+            </div>
+            <div class="card-body"> 
+                <div class="form-group">
+                    <textarea class="form-control" id="listtoko" rows="6">TARJ|2024-05-05|K|318,335,301#F04R|2024-05-06|K|418,435,312
+                        
+                    </textarea>
+                </div>
+                <br>
+                <button id="submitBtn" class="btn btn-primary btn-block">Jalankan Job</button>
+                <div id="loadingSpinner" class="spinner-border text-primary mt-2" role="status"></div>
+                <hr>
+                <div id="warning" style="display: none; color: red;"></div>
+                <a class="btn btn-warning btn-block" href="http://192.168.131.71:8053/report">Report</a>
+            </div>
+        </div> 
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            
+            
+            $('#submitBtn').click(function (event) {
+                event.preventDefault();  
+                var list_toko = $('#listtoko').val().trim(); 
+                
+                if (list_toko === '') {
+                    showWarning('Silahkan Isi data yang akan didownload!');
+                    return;
+                } 
+
+                hideWarning();
+
+                $('#loadingSpinner').show();
+
+                $.ajax({
+                    type: 'POST',
+                    url: 'http://192.168.131.71:8053/proses',
+                    data: { listtoko: list_toko},
+                    dataType: 'json',
+                    success: function (response) {
+                        $('#loadingSpinner').hide();
+                        if (response.status === 'success') {
+                            alert('Input Sukses, Silahkan klik button Report!');
+                        } else {
+                            alert('Error: ' + response.message);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        $('#loadingSpinner').hide();
+                        alert('Error: ' + error);
+                    }
+                });
+            });
+            
+            function showWarning(message) {
+                var warningElem = document.getElementById('warning');
+                warningElem.innerHTML = message;
+                warningElem.style.display = 'block';
+            }
+
+            function hideWarning() {
+                document.getElementById('warning').style.display = 'none';
+            }
+        
+        
+        });
+    </script>
+</body>
+</html>
