@@ -97,6 +97,10 @@ app.post('/proses', async(req, res) => {
         
         h.forEach(async(r) => await client.del(r))
 
+        const h2 = await client.keys("res-download-wt-*")
+        
+        h2.forEach(async(r) => await client.del(r))
+
         const dataPayload = req.body.listtoko
         const listtoko = dataPayload.split("#")
         
@@ -175,9 +179,10 @@ app.post('/download', async(req, res) => {
         for(let u of h){
 
             const dataWT = await client.get(u) 
-            const tgl = u.split("-")[4]
-            const kdtk = u.split("-")[3]
-            const namafile = `WT${tgl}${kdtk.substring(0,1)}.${kdtk.substring(1,3)}`
+            let tgl = u.split("-")[4]
+            tgl = tgl.substring(2,6)
+            const kdtk = u.split("-")[3].toUpperCase()
+            const namafile = `WT${tgl}${kdtk.substring(0,1)}.${kdtk.substring(1,4)}`
             const csv = Papa.unparse(JSON.parse(dataWT) ,opts);
             
             fs.writeFileSync(`./filewt/${namafile}`, csv);
@@ -210,15 +215,19 @@ app.post('/download', async(req, res) => {
     }
    
 }); 
-let taskDownload = false
+let taskDownload = true
 cron.schedule('*/10 * * * * *', async() => { 
     if (taskDownload) { 
         taskDownload = false
             console.log("[START] Download WT Toko: " + dayjs().format("YYYY-MM-DD HH:mm:ss") )
             try {       
-                const job = await doit(client)
-                console.log(job)
-                console.log("[END]  Download WT Toko:: " + dayjs().format("YYYY-MM-DD HH:mm:ss") )
+                if(parseInt(dayjs().format("H")) < 19 || parseInt(dayjs().format("H")) > 5 ){
+                    const job = await doit(client)
+                    console.log(job)
+                    console.log("[END] Download WT Toko:: " + dayjs().format("YYYY-MM-DD HH:mm:ss") )
+                }else{
+                    console.log("[SKIP] Download WT Toko:: " + dayjs().format("YYYY-MM-DD HH:mm:ss") )
+                }
                 taskDownload = true
         } catch (err) {
                 console.log("[END] ERROR !!!  Download WT Toko:: " + dayjs().format("YYYY-MM-DD HH:mm:ss") )

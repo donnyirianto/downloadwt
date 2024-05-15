@@ -51,7 +51,7 @@ export const readRespSql =  async(client,id,r) => {
                 "rtype": r.rtype,
                 "docno": r.docno,
                 "status": "TIDAK ADA DATA",
-                "updtime": dayjs().format("YYYY-MM-DD HH-mm-ss")
+                "updtime": dayjs().format("YYYY-MM-DD HH:mm:ss")
             }
             await client.set(id,JSON.stringify(upd))
             return {
@@ -70,7 +70,7 @@ export const readRespSql =  async(client,id,r) => {
                 "rtype": r.rtype,
                 "docno": r.docno,
                 "status": "SUKSES",
-                "updtime": dayjs().format("YYYY-MM-DD HH-mm-ss")
+                "updtime": dayjs().format("YYYY-MM-DD HH:mm:ss")
         }
 
         await client.set(id,JSON.stringify(upd))
@@ -86,7 +86,7 @@ export const readRespSql =  async(client,id,r) => {
             "rtype": r.rtype,
             "docno": r.docno,
             "status": "GAGAL",
-            "updtime": dayjs().format("YYYY-MM-DD HH-mm-ss")
+            "updtime": dayjs().format("YYYY-MM-DD HH:mm:ss")
         }
 
         await client.set(id,JSON.stringify(upd))
