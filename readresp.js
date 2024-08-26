@@ -4,14 +4,13 @@ import {nanoid} from "nanoid";
 
 export const readRespSql =  async(client,token,payload) => {
   try { 
-    console.log("request")
-    let respTask = await axios.post("http://172.24.52.10:7321/ReportFromListener/v1/CekStore", payload, {
+    
+    let respTask = await axios.post("http://172.24.52.14:7321/ReportFromListener/v1/CekStore", payload, {
         headers: {
           Token: `${token}`,
         },
         timeout: 200000,
       });
-      console.log("respData",respTask.data)
       if (respTask.data.code != 200) {
         throw new Error("Response Code Api != 200");
       }
@@ -21,26 +20,79 @@ export const readRespSql =  async(client,token,payload) => {
       readResponse = readResponse.filter((r) => r.data != "");
   
       for (let i of readResponse) {
+        
         if (i.msg == "Succes SQL Native") {
-            
+
+          let dataQ = JSON.parse(i.data)
+          if (dataQ.hasOwnProperty('pesan')) {
+            let iChace = await client.get(i.idreport)
+            iChace = JSON.parse(iChace)
+            const upd = {
+                "kdcab" : iChace.kdcab,
+                "toko": iChace.toko,
+                "tanggal": iChace.tanggal,
+                "rtype": iChace.rtype,
+                "docno": iChace.docno,
+                "status": "GAGAL",
+                "updtime": dayjs().format("YYYY-MM-DD HH:mm:ss")
+            }
+         
+            await client.set(i.idreport,JSON.stringify(upd))
+          }else{
+
             await client.set(`res-${i.idreport}`, i.data, {EX: 60 * 60 * 1});
+            let iChace = await client.get(i.idreport)
+            iChace = JSON.parse(iChace)
+            const upd = {
+                "kdcab" : iChace.kdcab,
+                "toko": iChace.toko,
+                "tanggal": iChace.tanggal,
+                "rtype": iChace.rtype,
+                "docno": iChace.docno,
+                "status": "SUKSES",
+                "updtime": dayjs().format("YYYY-MM-DD HH:mm:ss")
+            }
+         
+            await client.set(i.idreport,JSON.stringify(upd))
+          }
         }else{
             
             await client.set(`res-${i.idreport}`, JSON.parse(i.data)[0], {EX: 60 * 60 * 1});
+            let dataQ = JSON.parse(i.data)[0]
+            
+            if (dataQ[0].hasOwnProperty('pesan')) {
+              console.log("ada pesan")
+              let iChace = await client.get(i.idreport)
+              iChace = JSON.parse(iChace)
+              const upd = {
+                  "kdcab" : iChace.kdcab,
+                  "toko": iChace.toko,
+                  "tanggal": iChace.tanggal,
+                  "rtype": iChace.rtype,
+                  "docno": iChace.docno,
+                  "status": "GAGAL",
+                  "updtime": dayjs().format("YYYY-MM-DD HH:mm:ss")
+              }
+           
+              await client.set(i.idreport,JSON.stringify(upd))
+            }else{
+              console.log("Gak ada pesan")
+              let iChace = await client.get(i.idreport)
+              iChace = JSON.parse(iChace)
+              const upd = {
+                  "kdcab" : iChace.kdcab,
+                  "toko": iChace.toko,
+                  "tanggal": iChace.tanggal,
+                  "rtype": iChace.rtype,
+                  "docno": iChace.docno,
+                  "status": "SUKSES",
+                  "updtime": dayjs().format("YYYY-MM-DD HH:mm:ss")
+              }
+           
+              await client.set(i.idreport,JSON.stringify(upd))
+            }
         }
-        let iChace = await client.get(i.idreport)
-        iChace = JSON.parse(iChace)
-        const upd = {
-            "kdcab" : iChace.kdcab,
-            "toko": iChace.toko,
-            "tanggal": iChace.tanggal,
-            "rtype": iChace.rtype,
-            "docno": iChace.docno,
-            "status": "SUKSES",
-            "updtime": dayjs().format("YYYY-MM-DD HH:mm:ss")
-        }
-     
-        await client.set(i.idreport,JSON.stringify(upd))
+        
       }
     
         return {

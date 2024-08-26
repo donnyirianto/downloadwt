@@ -46,7 +46,6 @@ const prepareData = async (client, r) => {
     };
 
   } catch (error) {
-    console.log(error)
     return { status: "Gagal" };
   }
 }; 
@@ -63,12 +62,12 @@ export const doit = async (client) => {
     const dataLogin = await LoginESS();
 
     if (dataLogin.code != 200) throw new Error(dataLogin); 
-
-    for (let i = 0; i < dataPending.length; i += 1000) {
-      console.log(`[collect] run ${i}-${Math.min(i + 1000, dataPending.length)}`);
+    console.log("Total Pending: ",dataPending.length)
+    for (let i = 0; i < dataPending.length; i += 100) {
+      console.log(`[collect] run ${i}-${Math.min(i + 100, dataPending.length)}`);
       let allPromise = [];
 
-      for (let j = i; j < Math.min(i + 1000, dataPending.length); j++) {
+      for (let j = i; j < Math.min(i + 100, dataPending.length); j++) {
         const promise = new Promise((res, rej) => {
           prepareData(client, dataPending[j])
             .then((val) => {
@@ -88,16 +87,19 @@ export const doit = async (client) => {
       dataResult = dataResult.filter((r) => r.status === "Sukses");
 
       const dataPayload = dataResult.map((r) => r.data);
-      console.log(dataPayload)
-
-      if (dataPayload.length == 0) throw new Error("tidak ada pending list");
       
-      if (dataPayload.length >= 400) {
+      console.log("Sukses ambil antrian",dataPayload.length)
+      if (dataPayload.length == 0) {
+        continue;
+      }
+      
+      if (dataPayload.length >= 40) {
         let allPromise = [
-          readRespSql(client, dataLogin.data, dataPayload.slice(0, 250)),
-          readRespSql(client, dataLogin.data, dataPayload.slice(250, 500)),
-          readRespSql(client, dataLogin.data, dataPayload.slice(500, 750)),
-          readRespSql(client, dataLogin.data, dataPayload.slice(750, 1000)),
+          readRespSql(client, dataLogin.data, dataPayload.slice(0, 20)),
+          readRespSql(client, dataLogin.data, dataPayload.slice(20, 40)),
+          readRespSql(client, dataLogin.data, dataPayload.slice(40, 60)),
+          readRespSql(client, dataLogin.data, dataPayload.slice(60, 80)),
+          readRespSql(client, dataLogin.data, dataPayload.slice(80, 100)),
         ];
         await Promise.allSettled(allPromise);
       } else {
@@ -107,7 +109,7 @@ export const doit = async (client) => {
 
       //await runningAllSave();
 
-      console.log(`[collect] Total Task: Looping request ${i}-${Math.min(i + 1000, dataPending.length)}`);
+      console.log(`[collect] Total Task: Looping request ${i}-${Math.min(i + 100, dataPending.length)}`);
     }
      
     return "Selesai"

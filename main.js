@@ -180,6 +180,11 @@ app.post('/download', async(req, res) => {
         for(let u of h){
 
             const dataWT = await client.get(u) 
+            const dataQ = JSON.parse(dataWT)
+            if (dataQ[0].hasOwnProperty('pesan')) {
+                
+                continue;
+            }
             let tgl = u.split("|")[3]
             tgl = `${tgl.substring(5,7)}${tgl.substring(8,10)}`
             const kdtk = u.split("|")[2].toUpperCase()
@@ -229,7 +234,7 @@ cron.schedule('*/2 * * * *', async() => {
                 }else{
                     console.log("[SKIP] Download WT Toko:: " + dayjs().format("YYYY-MM-DD HH:mm:ss") )
                 }
-                taskDownload = false
+                taskDownload = true
         } catch (err) {
                 console.log("[END] ERROR !!!  Download WT Toko:: " + dayjs().format("YYYY-MM-DD HH:mm:ss") )
                 taskDownload = true
