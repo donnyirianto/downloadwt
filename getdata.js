@@ -1,8 +1,8 @@
-import { readRespSql} from "./readresp.js";
+import { readRespSql, LoginESS} from "./readresp.js";
 import dayjs from "dayjs";
 
 
-const prepare = async (client, r) => {
+const prepareData = async (client, r) => {
   try {
     let dataCache = await client.get(r);
 
@@ -12,12 +12,41 @@ const prepare = async (client, r) => {
 
     if(dataCache.status === "SUKSES") throw new Error("Skip");
 
+    let filterRtype = dataCache.rtype === "%" ? "" : `and rtype='${dataCache.rtype}'`
+    let filterDocno = dataCache.docno === "%" ? "" : `and bukti_no in(${dataCache.docno})`
+
+        let querySQL = `SELECT IFNULL(A.RECID,'') AS RECID,LEFT(A.RTYPE,1) AS RTYPE,
+                A.BUKTI_NO AS DOCNO,A.SEQNO,if(length(B.CAT_COD)=6,MID(B.CAT_COD,3,2),MID(B.CAT_COD,2,2)) AS \`DIV\`,
+                A.PRDCD,A.QTY,A.PRICE,A.GROSS,CR_TERM AS CTERM,A.INVNO AS DOCNO2,A.ISTYPE,
+                A.PO_NO AS INVNO,
+                IF((RTYPE='BPB' AND ISTYPE='') OR RTYPE IN ('I','O') OR (RTYPE='K' AND ISTYPE<>'L'),
+                GUDANG,
+                IF((RTYPE='BPB' AND ISTYPE<>'') OR (RTYPE='K' AND ISTYPE='L'),A.SUPCO,IF(RTYPE='X' AND (ISTYPE='' OR ISTYPE IN ('BM','KO')),(SELECT TOKO FROM TOKO),IF(RTYPE='X' AND (ISTYPE LIKE '%BA%' OR ISTYPE LIKE '%SO%') AND A.SUPCO='',(SELECT TOKO FROM TOKO),IF(RTYPE='X' AND (ISTYPE LIKE '%BA%' OR ISTYPE LIKE '%SO%') AND A.SUPCO<>'',A.SUPCO,'XXX'))))) AS TOKO,DATE_FORMAT(A.BUKTI_TGL,'%y%m%d') AS \`DATE\`,'0' AS DATE2,A.KETER AS KETERANGAN,B.PTAG,B.CAT_COD,'01' AS LOKASI,DATE_FORMAT(A.BUKTI_TGL,'%d-%m-%Y') AS TGL1,DATE_FORMAT(A.INV_DATE,'%d-%m-%Y') AS TGL2,A.PPN,'' AS TOKO_1,'' AS DATE3,'' AS DOCNO3,(SELECT KDTK FROM TOKO) AS SHOP,A.PRICE_IDM,'0' AS PPNBM_IDM,A.PPN_RP_IDM AS PPNRP_IDM,IFNULL(A.LT,'') AS LT,IFNULL(A.RAK,'') AS RAK,IFNULL(A.BAR,'') AS BAR,IF(A.BKP="Y",'T','F') AS BKP,IFNULL(A.SUB_BKP,' ') AS SUB_BKP,A.PRDCD AS PLUMD,A.GROSS_JUAL,A.PRICE_JUAL,IFNULL(C.KODE_SUPPLIER,'') AS KODE_SUPPLIER,A.DISC_05 AS DISC05,ifnull(ppn_rate,0) RATE_PPN,time(bukti_tgl) JAM,
+                if(b.flagprod rlike 'POT=Y','POT','') FLAG_BO
+        FROM MSTRAN A LEFT JOIN PRODMAST B ON A.PRDCD=B.PRDCD
+        LEFT JOIN SUPMAST C ON A.SUPCO=C.SUPCO
+        WHERE DATE(BUKTI_TGL)='${dataCache.tanggal}' 
+        AND istype not in ('GGC','RMB')
+        ${filterRtype}
+        ${filterDocno};
+        `
+        const dataPayload = {
+          kdcab: dataCache.kdcab,
+          toko: dataCache.toko,
+          task: "SQL",
+          idreport: `download-wt|${dataCache.kdcab}|${dataCache.toko}|${dataCache.tanggal}`,
+          station: "01",
+          command: querySQL,
+        };
+
     return {
       status: "Sukses",
       id: r,
-      data: dataCache
+      data: dataPayload, 
     };
+
   } catch (error) {
+    console.log(error)
     return { status: "Gagal" };
   }
 }; 
@@ -27,38 +56,21 @@ export const doit = async (client) => {
 
     console.log(`Running At : ${dayjs().format("YYYY-MM-DD HH:mm:ss")}`);
 
-    let rx = await client.keys("download-wt-*");
+    let dataPending = await client.keys("download-wt|*");
     
-    if(!rx) return "Tidak Ada Jadwal"
-    
-    let allPrepare = [];
-    for (let i of rx) {
-      const promise = new Promise((res, rej) => {
-        prepare(client, i)
-          .then((val) => {
-            res(val);
-          })
-          .catch((e) => {
-            rej(e);
-          });
-      });
-      allPrepare.push(promise);
-    }
-    
-    let actTaskPrepare = await Promise.allSettled(allPrepare);
+    if(!dataPending) return "Tidak Ada Jadwal"
 
-    let exPrepare = actTaskPrepare.filter((e) => e.status === "fulfilled").map((r) => r.value); 
-    let listHrAct = exPrepare.filter((r) => r.status == "Sukses");
-    
-    const dataGagalAll = [];
-    
-    for (let i = 0; i < listHrAct.length; i += 50) {
-      console.info(`[collect] run ${i}-${Math.min(i + 50, listHrAct.length)}`);
+    const dataLogin = await LoginESS();
+
+    if (dataLogin.code != 200) throw new Error(dataLogin); 
+
+    for (let i = 0; i < dataPending.length; i += 1000) {
+      console.log(`[collect] run ${i}-${Math.min(i + 1000, dataPending.length)}`);
       let allPromise = [];
 
-      for (let j = i; j < Math.min(i + 50, listHrAct.length); j++) {
+      for (let j = i; j < Math.min(i + 1000, dataPending.length); j++) {
         const promise = new Promise((res, rej) => {
-          readRespSql(client, listHrAct[j].id,listHrAct[j].data)
+          prepareData(client, dataPending[j])
             .then((val) => {
               res(val);
             })
@@ -66,25 +78,38 @@ export const doit = async (client) => {
               rej(e);
             });
         });
+
         allPromise.push(promise);
       }
+
+      const dataCache = await Promise.allSettled(allPromise);
+
+      let dataResult = dataCache.filter((r) => r.status === "fulfilled").map((r) => r.value);
+      dataResult = dataResult.filter((r) => r.status === "Sukses");
+
+      const dataPayload = dataResult.map((r) => r.data);
+      console.log(dataPayload)
+
+      if (dataPayload.length == 0) throw new Error("tidak ada pending list");
+      
+      if (dataPayload.length >= 400) {
+        let allPromise = [
+          readRespSql(client, dataLogin.data, dataPayload.slice(0, 250)),
+          readRespSql(client, dataLogin.data, dataPayload.slice(250, 500)),
+          readRespSql(client, dataLogin.data, dataPayload.slice(500, 750)),
+          readRespSql(client, dataLogin.data, dataPayload.slice(750, 1000)),
+        ];
+        await Promise.allSettled(allPromise);
+      } else {
         
+        await readRespSql(client, dataLogin.data, dataPayload);
+      }
 
-      let actTask = await Promise.allSettled(allPromise);
-      
-      actTask = actTask.filter((e) => e.status === "fulfilled").map((r) => r.value);
-      let dataResult_sukses = actTask.filter((r) => r.status == "Sukses");
-      let dataResult_gagal = actTask.filter((r) => r.status != "Sukses");
-      
-      dataGagalAll.push(...dataResult_gagal);
+      //await runningAllSave();
 
-      console.info(
-        `Total Task: Looping request ${i}-${Math.min(i + 50, listHrAct.length)}, Total OK: ${
-          dataResult_sukses.length
-        }, Total NOK: ${dataGagalAll.length}`
-      );
+      console.log(`[collect] Total Task: Looping request ${i}-${Math.min(i + 1000, dataPending.length)}`);
     }
-
+     
     return "Selesai"
 
   } catch (err) {

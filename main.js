@@ -93,11 +93,11 @@ app.post('/proses', async(req, res) => {
 
         await deleteFilesInDirectory("./filewt")
 
-        const h = await client.keys("download-wt-*")
+        const h = await client.keys("download-wt|*")
         
         h.forEach(async(r) => await client.del(r))
 
-        const h2 = await client.keys("res-download-wt-*")
+        const h2 = await client.keys("res-download-wt|*")
         
         h2.forEach(async(r) => await client.del(r))
 
@@ -107,14 +107,15 @@ app.post('/proses', async(req, res) => {
         for(let u of listtoko){ 
 
            const pay = {
-            toko: u.split("|")[0],
-            tanggal: u.split("|")[1],
-            rtype: u.split("|")[2],
-            docno: u.split("|")[3],
+            kdcab: u.split("|")[0],
+            toko: u.split("|")[1],
+            tanggal: u.split("|")[2],
+            rtype: u.split("|")[3],
+            docno: u.split("|")[4],
             status: "NOK",
             updtime: dayjs().format("YYYY-MM-DD HH:mm:ss"),
            }
-           await client.set(`download-wt-${nanoid()}`, JSON.stringify(pay), {'EX': 60 * 60 * 1 })
+           await client.set(`download-wt|${ u.split("|")[0]}|${u.split("|")[1]}|${u.split("|")[2]}`, JSON.stringify(pay),  {EX: 60 * 30 * 1})
         }
         
         res.json({
@@ -131,7 +132,7 @@ app.post('/proses', async(req, res) => {
 
 app.post('/data', async(req, res) => {
     try {
-        const data = await client.keys("download-wt-*")
+        const data = await client.keys("download-wt|*")
         
         let dataResp = []
 
@@ -164,7 +165,7 @@ app.post('/data', async(req, res) => {
  
 app.post('/download', async(req, res) => {
     try {
-        const h = await client.keys("res-download-wt-*")
+        const h = await client.keys("res-download-wt*")
        
         let opts = {
             quotes: false, //or array of booleans
@@ -179,9 +180,9 @@ app.post('/download', async(req, res) => {
         for(let u of h){
 
             const dataWT = await client.get(u) 
-            let tgl = u.split("-")[4]
-            tgl = tgl.substring(2,6)
-            const kdtk = u.split("-")[3].toUpperCase()
+            let tgl = u.split("|")[3]
+            tgl = `${tgl.substring(5,7)}${tgl.substring(8,10)}`
+            const kdtk = u.split("|")[2].toUpperCase()
             const namafile = `WT${tgl}${kdtk.substring(0,1)}.${kdtk.substring(1,4)}`
             const csv = Papa.unparse(JSON.parse(dataWT) ,opts);
             
@@ -216,7 +217,7 @@ app.post('/download', async(req, res) => {
    
 }); 
 let taskDownload = true
-cron.schedule('*/10 * * * * *', async() => { 
+cron.schedule('*/2 * * * *', async() => { 
     if (taskDownload) { 
         taskDownload = false
             console.log("[START] Download WT Toko: " + dayjs().format("YYYY-MM-DD HH:mm:ss") )
@@ -228,7 +229,7 @@ cron.schedule('*/10 * * * * *', async() => {
                 }else{
                     console.log("[SKIP] Download WT Toko:: " + dayjs().format("YYYY-MM-DD HH:mm:ss") )
                 }
-                taskDownload = true
+                taskDownload = false
         } catch (err) {
                 console.log("[END] ERROR !!!  Download WT Toko:: " + dayjs().format("YYYY-MM-DD HH:mm:ss") )
                 taskDownload = true
