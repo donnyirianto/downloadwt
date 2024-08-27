@@ -23,7 +23,7 @@ export const readRespSql =  async(client,token,payload) => {
         
         if (i.msg == "Succes SQL Native") {
 
-          let dataQ = JSON.parse(i.data)[0]
+          let dataQ = JSON.parse(i.data)
           if (dataQ.hasOwnProperty('pesan')) {
             let iChace = await client.get(i.idreport)
             iChace = JSON.parse(iChace)

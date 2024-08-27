@@ -269,7 +269,7 @@ app.post('/download', async(req, res) => {
    
 }); 
 let taskDownload = true
-cron.schedule('*/2 * * * *', async() => { 
+cron.schedule('*/1 * * * *', async() => { 
     if (taskDownload) { 
         taskDownload = false
             console.log("[START] Download WT Toko: " + dayjs().format("YYYY-MM-DD HH:mm:ss") )
