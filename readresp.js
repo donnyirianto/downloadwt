@@ -23,7 +23,7 @@ export const readRespSql =  async(client,token,payload) => {
         
         if (i.msg == "Succes SQL Native") {
 
-          let dataQ = JSON.parse(i.data)
+          let dataQ = JSON.parse(i.data)[0]
           if (dataQ.hasOwnProperty('pesan')) {
             let iChace = await client.get(i.idreport)
             iChace = JSON.parse(iChace)
@@ -61,7 +61,7 @@ export const readRespSql =  async(client,token,payload) => {
             let dataQ = JSON.parse(i.data)[0]
             
             if (dataQ[0].hasOwnProperty('pesan')) {
-              console.log("ada pesan")
+              
               let iChace = await client.get(i.idreport)
               iChace = JSON.parse(iChace)
               const upd = {
@@ -76,7 +76,7 @@ export const readRespSql =  async(client,token,payload) => {
            
               await client.set(i.idreport,JSON.stringify(upd))
             }else{
-              console.log("Gak ada pesan")
+              
               let iChace = await client.get(i.idreport)
               iChace = JSON.parse(iChace)
               const upd = {

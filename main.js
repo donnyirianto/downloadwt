@@ -189,7 +189,54 @@ app.post('/download', async(req, res) => {
             tgl = `${tgl.substring(5,7)}${tgl.substring(8,10)}`
             const kdtk = u.split("|")[2].toUpperCase()
             const namafile = `WT${tgl}${kdtk.substring(0,1)}.${kdtk.substring(1,4)}`
-            const csv = Papa.unparse(JSON.parse(dataWT) ,opts);
+            let dataTulis = JSON.parse(dataWT);
+            dataTulis = dataTulis.map( (r) =>{
+                return {
+                    RECID: r.RECID,
+                    RTYPE: r.RTYPE,
+                    DOCNO: r.DOCNO,
+                    SEQNO: r.SEQNO,
+                    DIV: r.DIV,
+                    PRDCD: r.PRDCD,
+                    QTY: r.QTY,
+                    PRICE: r.PRICE,
+                    GROSS: r.GROSS,
+                    CTERM: r.CTERM,
+                    DOCNO2: r.DOCNO2,
+                    ISTYPE: r.ISTYPE,
+                    INVNO: r.INVNO,
+                    TOKO: r.TOKO,
+                    DATE: r.DATE,
+                    DATE2: r.DATE2,
+                    KETERANGAN: r.KETERANGAN,
+                    PTAG: r.PTAG,
+                    CAT_COD: r.CAT_COD,
+                    LOKASI: r.LOKASI,
+                    TGL1: r.TGL1,
+                    TGL2: r.TGL2,
+                    TOKO_1: r.TOKO_1,
+                    DATE3: r.DATE3,
+                    DOCNO3: r.DOCNO3,
+                    SHOP: r.SHOP,
+                    PRICE_IDM: r.PRICE_IDM,
+                    PPNBM_IDM: r.PPNBM_IDM,
+                    PPNRP_IDM: r.PPNRP_IDM,
+                    LT: r.LT,
+                    RAK: r.RAK,
+                    BAR: r.BAR,
+                    BKP: r.BKP,
+                    SUB_BKP: r.SUB_BKP,
+                    PLUMD: r.PLUMD,
+                    GROSS_JUAL: r.GROSS_JUAL,
+                    PRICE_JUAL: r.PRICE_JUAL,
+                    KODE_SUPPLIER: r.KODE_SUPPLIER,
+                    DISC05: r.DISC05,
+                    RATE_PPN: r.RATE_PPN,
+                    JAM: r.JAM,
+                    FLAG_BO: r.FLAG_BO,
+                }
+            })
+            const csv = Papa.unparse(dataTulis ,opts);
             
             fs.writeFileSync(`./filewt/${namafile}`, csv);
 
