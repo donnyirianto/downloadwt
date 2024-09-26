@@ -214,6 +214,7 @@ app.post('/download', async(req, res) => {
                     LOKASI: r.LOKASI,
                     TGL1: r.TGL1,
                     TGL2: r.TGL2,
+                    PPN: r.PPN,
                     TOKO_1: r.TOKO_1,
                     DATE3: r.DATE3,
                     DOCNO3: r.DOCNO3,
