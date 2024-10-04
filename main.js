@@ -6,6 +6,7 @@ import {client} from "./redis.js";
 import cron from "node-cron";
 import dayjs from 'dayjs';
 import { doit} from "./getdata.js"
+import { doitigr} from "./getdata_igr.js"
 import { nanoid } from 'nanoid';
 import fs from "fs";
 
@@ -84,8 +85,16 @@ function zipFolder(folderPath, zipFilePath) {
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'job.html'));
 });
+
 app.get('/report', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'report.html'));
+});
+
+app.get('/igr', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'job_igr.html'));
+});
+app.get('/report-igr', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'report_igr.html'));
 });
 
 app.post('/proses', async(req, res) => {
@@ -116,6 +125,46 @@ app.post('/proses', async(req, res) => {
             updtime: dayjs().format("YYYY-MM-DD HH:mm:ss"),
            }
            await client.set(`download-wt|${ u.split("|")[0]}|${u.split("|")[1]}|${u.split("|")[2]}`, JSON.stringify(pay),  {EX: 60 * 30 * 1})
+        }
+        
+        res.json({
+            message: "ok",
+            status: "success"
+        });
+
+    } catch (error) {
+        console.log(error)
+        res.status(400).send({ code : 400, status: 'Error', message: error.message });
+    }
+   
+}); 
+
+app.post('/proses-igr', async(req, res) => {
+    try {
+
+        await deleteFilesInDirectory("./filewt_igr")
+
+        const h = await client.keys("download-wt-igr|*")
+        
+        h.forEach(async(r) => await client.del(r))
+
+        const h2 = await client.keys("res-download-wt-igr|*")
+        
+        h2.forEach(async(r) => await client.del(r))
+
+        const dataPayload = req.body.listtoko
+        const listtoko = dataPayload.split("#")
+        
+        for(let u of listtoko){ 
+
+           const pay = {
+            kdcab: u.split("|")[0],
+            toko: u.split("|")[1],
+            invno: u.split("|")[2],
+            status: "NOK",
+            updtime: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+           }
+           await client.set(`download-wt-igr|${ u.split("|")[0]}|${u.split("|")[1]}|${u.split("|")[2]}`, JSON.stringify(pay),  {EX: 60 * 30 * 1})
         }
         
         res.json({
@@ -162,7 +211,83 @@ app.post('/data', async(req, res) => {
     }
    
 });
- 
+
+app.post('/data-igr', async(req, res) => {
+    try {
+        const data = await client.keys("download-wt-igr|*")
+        
+        let dataResp = []
+
+        for(let i of data){
+            const x = await client.get(i) 
+            dataResp.push(JSON.parse(x)) 
+        }
+        
+        const data2 = await client.keys("res-wt-igr-download-wt-igr|*")
+        
+        let dataResp2 = [];
+        let sudah = {};
+
+        for (let i of data2) {
+            let x = JSON.parse(await client.get(i));
+            console.log(i,x.length)
+
+            if(x.length > 0){
+                if (x[0].keterangan === "Sudah Terbentuk BPB") {
+                    let u = `${x[0].kdcab}|${x[0].toko}|${dayjs(x[0].bukti_tgl).format("YYYY-MM-DD")}`;
+                    sudah[u] = sudah[u] || []; // Inisialisasi jika belum ada
+                    sudah[u].push(x[0].bukti_no); // Tambahkan invoice number
+                }    
+                dataResp2.push(x);
+            }else{               
+                    let xu =  {
+                        kdcab: i.split("|")[1],
+                        toko: i.split("|")[2],
+                        invno: i.split("|")[3],
+                        bukti_tgl: 0,
+                        bukti_no: 0,
+                        gross: 0,
+                        gross_npb_d: 0,
+                        qty: 0,
+                        sj_qty: 0,
+                        ppn: 0,
+                        ppn_npb_d: 0,
+                        keterangan: "Data Tidak Ditemukan",
+                        addid: "",
+                    }
+                    dataResp2.push(xu)
+            } 
+        }
+
+        let dataDownload = Object.entries(sudah).map(
+            ([key, invnos]) => `${key}|BPB|${invnos.join(",")}`
+        );
+        
+
+        res.json({
+            message: "ok",
+            status: "success",
+            data: {
+                total_data: dataResp.length,
+                toko_sdh_proses: dataResp.filter(r => r.status ==="SUKSES").length,
+                toko_blm_proses: dataResp.filter(r => r.status ==="NOK").length,
+                toko_data_nok: dataResp.filter(r => r.status ==="TIDAK ADA DATA").length,
+                toko_gagal: dataResp.filter(r => r.status ==="GAGAL").length,
+                total_data: dataResp.length,
+                data_detail: dataResp,
+                data_detail_result: dataResp2.flat(),
+                text_download: dataDownload.join("#")
+            }
+        });
+
+
+    } catch (error) {
+        console.log(error)
+        res.status(400).send({ code : 400, status: 'Error', message: error.message });
+    }
+   
+});
+
 app.post('/download', async(req, res) => {
     try {
         const h = await client.keys("res-download-wt*")
@@ -269,6 +394,7 @@ app.post('/download', async(req, res) => {
     }
    
 }); 
+
 let taskDownload = true
 cron.schedule('*/1 * * * *', async() => { 
     if (taskDownload) { 
@@ -286,6 +412,28 @@ cron.schedule('*/1 * * * *', async() => {
         } catch (err) {
                 console.log("[END] ERROR !!!  Download WT Toko:: " + dayjs().format("YYYY-MM-DD HH:mm:ss") )
                 taskDownload = true
+        }
+    } 
+});
+
+let taskDownloadIgr = true;
+cron.schedule('*/1 * * * *', async() => { 
+//(async()=>{
+    if (taskDownloadIgr) { 
+        taskDownloadIgr = false
+            console.log("[START] Download WT IGR Toko: " + dayjs().format("YYYY-MM-DD HH:mm:ss") )
+            try {       
+                if(parseInt(dayjs().format("H")) < 19 || parseInt(dayjs().format("H")) > 5 ){
+                    await doitigr(client) 
+
+                    console.log("[END] Download WT IGR Toko:: " + dayjs().format("YYYY-MM-DD HH:mm:ss") )
+                }else{
+                    console.log("[SKIP] Download WT IGR Toko:: " + dayjs().format("YYYY-MM-DD HH:mm:ss") )
+                }
+                taskDownloadIgr = true
+        } catch (err) {
+                console.log("[END] ERROR !!!  Download WT IGR Toko:: " + dayjs().format("YYYY-MM-DD HH:mm:ss") )
+                taskDownloadIgr = true
         }
     } 
 });

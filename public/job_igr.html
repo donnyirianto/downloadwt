@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Download WT</title>
+    <title>Cek WT IGR</title>
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
@@ -41,20 +41,21 @@
     <div class="container mt-5">
         <div class="card">
             <div class="card-header">
-                <h4 class="card-title m-0">Trigger Toko</h4>
+                <h4 class="card-title m-0">Cek WT IGR - Acuan INVNO</h4>
             </div>
             <div class="card-body"> 
                 <div class="form-group">
-                    <textarea class="form-control" id="listtoko" rows="6" placeholder="G034|F1RX|2024-08-14|%|%#G004|F04R|2024-08-13|K|418,435,312"></textarea>
+                    <textarea class="form-control" id="listtoko" rows="6" placeholder="G149|TDOZ|2425589,2427283#G004|F04R|2427700"></textarea>
                 </div>
                 <br>
                 <button id="submitBtn" class="btn btn-primary btn-block">Jalankan Job</button>
                 <div id="loadingSpinner" class="spinner-border text-primary mt-2" role="status"></div>
                 <hr>
                 <div id="warning" style="display: none; color: red;"></div>
-                <a class="btn btn-warning btn-block" href="http://192.168.131.71:8053/report">Report</a>
+                <a class="btn btn-warning btn-block" href="http://192.168.131.71:8053/report-igr">Report</a>
 
-                <a class="btn btn-danger btn-block" href="http://192.168.131.71:8053/igr">Job IGR</a>
+
+                <a class="btn btn-danger btn-block" href="http://192.168.131.71:8053/">Job WT</a>
             </div>
         </div> 
     </div>
@@ -79,7 +80,7 @@
 
                 $.ajax({
                     type: 'POST',
-                    url: 'http://192.168.131.71:8053/proses',
+                    url: 'http://192.168.131.71:8053/proses-igr',
                     data: { listtoko: list_toko.trim()},
                     dataType: 'json',
                     success: function (response) {

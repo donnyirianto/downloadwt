@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+  <title>Hasil Cek Data WT IGR</title>
+  <!-- Include Vue.js and Vuetify -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+  <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@6.x/css/materialdesignicons.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/vuetify@2.5.10/dist/vuetify.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/vuetify@2.5.10/dist/vuetify.min.js"></script>
+</head>
+<body>
+  <div id="app">
+    <v-app>
+      <v-main>
+        <v-container fluid>
+          <h1>Hasil Cek WT IGR</h1> 
+          
+          <v-row class="d-flex justify-center">
+            <v-col cols="2" >
+              <v-card class="d-flex mx-auto cyan accent-4 rounded-md" elevation="10">
+                <v-card-text> 
+                      <div class="subtitle-1 font-weight-bold white--text">Total Data</div>
+                      <div class="display-1 font-weight-bold white--text">
+                        <v-icon medium class="white--text">mdi-alert-circle-outline</v-icon> 
+                        {{ this.total_data }}
+                      </div>  
+                </v-card-text>
+              </v-card>
+            </v-col>
+
+            <v-col cols="2" >
+              <v-card class="d-flex mx-auto green accent-4 rounded-md" elevation="10">
+                <v-card-text> 
+                      <div class="subtitle-1 font-weight-bold white--text">Sudah Proses</div>
+                      <div class="display-1 font-weight-bold white--text">
+                        <v-icon medium class="white--text">mdi-alert-circle-outline</v-icon> 
+                        {{ this.toko_sdh_proses }}
+                      </div>  
+                </v-card-text>
+              </v-card>
+            </v-col>
+            <v-col cols="2" >
+              <v-card class="d-flex mx-auto orange accent-4 rounded-md" elevation="10">
+                <v-card-text> 
+                      <div class="subtitle-1 font-weight-bold white--text">Tidak Ada Data</div>
+                      <div class="display-1 font-weight-bold white--text">
+                        <v-icon medium class="white--text">mdi-alert-circle-outline</v-icon> 
+                        {{ this.toko_data_nok }}
+                      </div>  
+                </v-card-text>
+              </v-card>
+            </v-col> 
+
+            <v-col cols="2" >
+              <v-card class="d-flex mx-auto teal accent-4 rounded-md" elevation="10">
+                <v-card-text> 
+                      <div class="subtitle-1 font-weight-bold white--text">Toko Belum Proses</div>
+                      <div class="display-1 font-weight-bold white--text">
+                        <v-icon medium class="white--text">mdi-alert-circle-outline</v-icon> 
+                        {{ this.toko_blm_proses }}
+                      </div>  
+                </v-card-text>
+              </v-card>
+            </v-col> 
+
+            <v-col cols="2" >
+              <v-card class="d-flex mx-auto pink rounded-md" elevation="10">
+                <v-card-text> 
+                      <div class="subtitle-1 font-weight-bold white--text">Gagal Akses Toko</div>
+                      <div class="display-1 font-weight-bold white--text">
+                        <v-icon medium class="white--text">mdi-alert-circle-outline</v-icon> 
+                        {{ this.toko_gagal }}
+                      </div>  
+                </v-card-text>
+              </v-card>
+            </v-col>  
+        </v-row> 
+            <v-card>
+              <v-card-title>
+                <v-btn
+                elevation="0"
+                rounded 
+                small
+                color="#2765f5"
+                @click="downloadWT"
+                dark
+              >
+                <v-icon>mdi-file-download-outline</v-icon>
+                Trigger Download File WT</v-btn
+              >
+              &nbsp;&nbsp;
+              <v-btn
+              elevation="0"
+              rounded 
+              small
+              color="aqua"
+              @click="kehaldownload"
+              dark
+            >
+              <v-icon>mdi-arrow-left</v-icon>
+              Cek Download WT
+            </v-btn>
+              &nbsp;&nbsp;
+              <v-btn
+                elevation="0"
+                rounded 
+                small
+                color="info"
+                @click="fetchData"
+                dark
+                >
+                <v-icon>mdi-reload</v-icon>
+                Refresh Data</v-btn
+                >
+              &nbsp;&nbsp;
+
+              <v-btn
+                elevation="0"
+                rounded 
+                small
+                color="pink"
+                @click="inputulang"
+                dark
+              >
+                <v-icon>mdi-arrow-left</v-icon>
+                Input Ulang
+              </v-btn>
+              &nbsp;&nbsp;
+                <v-spacer></v-spacer>
+                <v-text-field
+                  v-model="search"
+                  append-icon="mdi-magnify"
+                  label="Search"
+                  single-line
+                  hide-details
+                ></v-text-field>
+              </v-card-title>
+            <v-card-text>
+                <v-data-table
+                :headers="headers"
+                :items="datatable"
+                :search="search"
+                :loading="loading"
+                loading-text="Loading... Please wait"
+              ></v-data-table>
+            </v-card-text> 
+             
+
+            <v-card>
+              <v-card-title> 
+                <v-col cols="4" >
+                <v-text-field
+                  v-model="search"
+                  append-icon="mdi-magnify"
+                  label="Search"
+                  single-line
+                  hide-details
+                ></v-text-field>
+                </v-col>
+              </v-card-title>
+            <v-card-text>
+                <v-data-table
+                :headers="headers2"
+                :items="datatable2"
+                :search="search"
+                :loading="loading"
+                loading-text="Loading... Please wait"
+              ></v-data-table>
+            </v-card-text> 
+
+              <v-snackbar  
+              :multi-line="multiLine"
+              dark
+              elevation="25"
+              top
+              v-model="snackbar" 
+              :timeout="8000"
+              >
+                {{ snackbarText }}
+                <template v-slot:action="{ attrs }">
+                <v-btn
+                  color="red"
+                  text
+                  v-bind="attrs"
+                  @click="snackbar = false"
+                >
+                  Close
+                </v-btn>
+              </template>
+            </v-snackbar>
+            </v-card> 
+        </v-container>
+      </v-main>
+    </v-app>
+  </div>
+
+  <script>
+    new Vue({
+      el: '#app',
+      vuetify: new Vuetify(),
+      data: {
+        total_data:0,
+        toko_sdh_proses:0,
+        toko_blm_proses:0,
+        toko_data_nok: 0,
+        toko_gagal:0,
+        datatable: [],
+        datatable2: [],
+        loading:false,
+        search: "",
+        showDialog: false,
+        multiLine: true,
+        snackbar:false,
+        snackbarText:"", 
+        tokoact:"",
+        textDownload: "",
+        headers: [
+          { text: 'Kdcab', value: 'kdcab' }, 
+          { text: 'Toko', value: 'toko' }, 
+          { text: 'Invno', value: 'invno' },      
+          { text: 'Status', value: 'status' },    
+          { text: 'Last Update', value: 'updtime' },
+        ],  
+        headers2: [
+          { text: 'Kdcab', value: 'kdcab' }, 
+          { text: 'Toko', value: 'toko' }, 
+          { text: 'Invno', value: 'invno' },      
+          { text: 'Bukti Tgl', value: 'bukti_tgl' },    
+          { text: 'Bukti No', value: 'bukti_no' },    
+          { text: 'Gross', value: 'gross' },  
+          { text: 'Gross NPBD', value: 'gross_npb_d' },
+          { text: 'Qty', value: 'qty' },
+          { text: 'Sj Qty', value: 'sj_qty' },
+          { text: 'PPN', value: 'ppn'},
+          { text: 'PPN NPBD', value: 'ppn_npb_d'},
+          { text: 'Keterangan', value: 'keterangan' },
+          { text: 'Addid', value: 'addid' },
+        ],  
+      },
+      mounted() {
+        this.fetchData()
+      },
+      methods: {
+        tampilDialog(){
+            this.showDialog =  !this.showDialog
+        },
+        loaddata(){
+            setInterval(() => {    
+              this.fetchData()
+            }, 300000);         
+        },           
+        async fetchData() {
+          try {
+            this.loading = true;
+            const response = await fetch('http://192.168.131.71:8053/data-igr', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+            });
+            const data = await response.json();
+            if(data.code != 200){
+                this.snackbarText = data.message;
+                this.snackbar = true;  
+            }
+            this.total_data = data.data.total_data,
+            this.toko_sdh_proses = data.data.toko_sdh_proses
+            this.toko_blm_proses = data.data.toko_blm_proses
+            this.toko_data_nok = data.data.toko_data_nok
+            this.toko_gagal = data.data.toko_gagal
+
+            this.datatable = data.data.data_detail;
+            this.datatable2 = data.data.data_detail_result;
+            this.textDownload = data.data.text_download;
+
+            this.loading = false;
+          } catch (error) {
+            this.snackbarText = `error: Gagal Akses Data!`;
+            this.snackbar = true;  
+          }
+        },
+        async inputulang() {
+          window.location.href = 'http://192.168.131.71:8053/igr';
+        },
+        async kehaldownload() {
+          window.location.href = 'http://192.168.131.71:8053/report';
+        },
+        async downloadWT(){
+            try {
+              this.loading = true;
+              
+              const response = await fetch('http://192.168.131.71:8053/proses', {
+                method: 'POST',
+                body: JSON.stringify({ listtoko: this.textDownload.trim() }),
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+              });
+              
+              this.loading = false;
+              
+              this.snackbarText = `Trigger Download berhasil, silahkan masuk ke halaman Download WT`;
+              this.snackbar = true;  
+                
+            } catch (error) {
+
+                this.loading = false;
+                this.snackbarText = `error: ${error}`;
+                this.snackbar = true;  
+            }
+            
+        },
+      }
+    });
+  </script>
+</body>
+</html>

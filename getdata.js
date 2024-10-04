@@ -40,7 +40,7 @@ const prepareData = async (client, r) => {
           station: "01",
           command: querySQL,
         };
-        console.log(JSON.stringify(dataPayload))
+        
     return {
       status: "Sukses",
       id: r,
